@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notion Search</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    tr.highlight {
+      background-color: #ffff99;
+    }
+  </style>
+</head>
+<body>
+  <input type="text" id="searchInput" placeholder="Digite sua pesquisa...">
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Descrição</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Resultados da API serão inseridos aqui -->
+    </tbody>
+  </table>
+
+  <script>
+    const apiKey = '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'; // Substitua com sua chave da API do Notion
+    const databaseId = '14469412d98e80e080a0f82900d25178'; // Substitua com o ID do seu database
+
+    async function fetchNotionData() {
+      const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Notion-Version': '2022-06-28'
+        },
+        body: JSON.stringify({})
+      });
+
+      const data = await response.json();
+      return data.results;
+    }
+
+    function renderTable(data, searchTerm = '') {
+      const tableBody = document.getElementById('resultsTable').querySelector('tbody');
+      tableBody.innerHTML = ''; // Limpa os resultados anteriores
+
+      data.forEach(item => {
+        const name = item.properties.Name.title[0]?.plain_text || 'Sem Nome';
+        const description = item.properties.Description?.rich_text[0]?.plain_text || 'Sem Descrição';
+
+        // Destacar a linha se o termo de pesquisa corresponder
+        const isMatch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        description.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const row = document.createElement('tr');
+        if (isMatch && searchTerm) row.classList.add('highlight');
+        row.innerHTML = `
+          <td>${name}</td>
+          <td>${description}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    async function init() {
+      const data = await fetchNotionData();
+
+      // Renderiza a tabela inicialmente
+      renderTable(data);
+
+      // Configura a pesquisa em tempo real
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('input', (e) => {
+        renderTable(data, e.target.value);
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
